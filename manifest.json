@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "ChatGPT Quick Scroll",
+  "version": "1.0",
+  "description": "Quickly navigate between your messages in ChatGPT",
+  "icons": {
+    "16": "images/avt.png",
+    "48": "images/avt.png",
+    "128": "images/avt.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "permissions": ["activeTab"]
+}
