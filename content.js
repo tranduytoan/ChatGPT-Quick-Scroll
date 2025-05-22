@@ -27,6 +27,10 @@ function initWithRetry(retryCount = 0, maxRetries = 10) {
   // Check if button already exists
   if (document.getElementById('quick-scroll-btn')) {
     console.log('ChatGPT Quick Scroll: Button already exists');
+    // return;
+    if (retryCount < maxRetries) {
+      setTimeout(() => initWithRetry(retryCount + 1, maxRetries), 500);
+    }
     return;
   }
 
