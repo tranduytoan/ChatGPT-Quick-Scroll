@@ -9,17 +9,10 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
 
 // Initialize with retry mechanism
 function initWithRetry(retryCount = 0, maxRetries = 10) {
-  // Check if we're on supported platforms
-  const isChatGPT = window.location.href.includes('chatgpt.com');
-  const isGemini = window.location.href.includes('gemini.google.com');
-  
-  if (!isChatGPT && !isGemini) return;
-  
   // Make sure the main element exists
   const mainElement = document.querySelector('main');
   if (!mainElement) {
     if (retryCount < maxRetries) {
-      // Exponential backoff for retries (500ms, 1000ms, 2000ms, etc.)
       const delay = 500 * Math.pow(2, retryCount);
       console.log(`ChatGPT Quick Scroll: Main element not found, retrying in ${delay}ms (${retryCount + 1}/${maxRetries})`);
       setTimeout(() => initWithRetry(retryCount + 1, maxRetries), delay);
@@ -47,7 +40,7 @@ function createQuickScrollButton(mainElement) {
   // Create the button
   const button = document.createElement('button');
   button.id = 'quick-scroll-btn';
-  button.innerHTML = '⚡';  // Lightning bolt icon
+  button.innerHTML = '⚡';
   button.title = 'Quick scroll to messages';
   
   // Set button styles for positioning relative to main element
@@ -66,12 +59,12 @@ function createQuickScrollButton(mainElement) {
   panel.id = 'quick-scroll-panel';
   panel.classList.add('hidden');
   panel.style.position = 'absolute';
-  panel.style.bottom = '70px';  // Position above the button
+  panel.style.bottom = '70px';
   panel.style.left = '24px';
-  panel.style.zIndex = '1001';  // Ensure panel appears above other elements
-  panel.style.width = '413px';  // Set a fixed width for the panel
-  panel.style.height = '50%'; // Limit height with scrolling
-  panel.style.overflowY = 'auto';  // Enable scrolling if content is too tall
+  panel.style.zIndex = '1001';
+  panel.style.width = '413px';
+  panel.style.height = '50%';
+  panel.style.overflowY = 'auto';
   
   // Create panel header
   const header = document.createElement('div');
@@ -90,11 +83,9 @@ function createQuickScrollButton(mainElement) {
     mainElement.style.position = 'relative';
   }
   
-  // Append button to mainElement and panel to mainElement
+  // Append button and panel to mainElement
   mainElement.appendChild(button);
-  // document.body.appendChild(panel);
   mainElement.appendChild(panel);
-
   
   // Button click toggles panel
   button.addEventListener('click', () => {
@@ -119,10 +110,10 @@ function createQuickScrollButton(mainElement) {
 
 function updateMessagesPanel() {
   const content = document.getElementById('quick-scroll-content');
-  content.innerHTML = '';  // Clear existing content
+  content.innerHTML = '';
   
   // Find all user messages
-  const userMessages = findUserMessages();
+  const userMessages = findChatGPTUserMessages();
   
   if (userMessages.length === 0) {
     const noMessages = document.createElement('div');
@@ -138,11 +129,11 @@ function updateMessagesPanel() {
     messageElement.className = 'quick-scroll-message';
     
     // Get message text and truncate it
-    const messageText = getMessageText(message);
+    const messageText = getChatGPTMessageText(message);
     const truncatedText = truncateText(messageText);
     
     messageElement.textContent = truncatedText;
-    messageElement.title = messageText; // Show full text on hover
+    messageElement.title = messageText;
     
     // Add click event to scroll to the message
     messageElement.addEventListener('click', () => {
@@ -151,19 +142,6 @@ function updateMessagesPanel() {
     
     content.appendChild(messageElement);
   });
-}
-
-function findUserMessages() {
-  const isChatGPT = window.location.href.includes('chatgpt.com');
-  const isGemini = window.location.href.includes('gemini.google.com');
-  
-  if (isGemini) {
-    return findGeminiUserMessages();
-  } else if (isChatGPT) {
-    return findChatGPTUserMessages();
-  }
-  
-  return [];
 }
 
 function findChatGPTUserMessages() {
@@ -182,7 +160,7 @@ function findChatGPTUserMessages() {
   
   // Process messages with role attribute
   messagesWithRole.forEach(msg => {
-    const text = getMessageText(msg);
+    const text = getChatGPTMessageText(msg);
     if (text && !uniqueMessages.has(text)) {
       uniqueMessages.set(text, msg);
     }
@@ -190,50 +168,20 @@ function findChatGPTUserMessages() {
   
   // Process user articles, avoiding duplicates
   userArticles.forEach(article => {
-    const text = getMessageText(article);
+    const text = getChatGPTMessageText(article);
     if (text && !uniqueMessages.has(text)) {
       uniqueMessages.set(text, article);
     }
   });
   
-  // Return only the unique message elements
   return Array.from(uniqueMessages.values());
 }
 
-function findGeminiUserMessages() {
-  // Find all Gemini user messages using the specific selector pattern
-  const userMessages = [];
-  
-  // Look for user query content elements
-  const queryElements = document.querySelectorAll('[id^="user-query-content-"] p');
-  
-  queryElements.forEach(element => {
-    // Find the closest container that represents the full message
-    const messageContainer = element.closest('[id^="user-query-content-"]') || element;
-    const text = getMessageText(messageContainer);
-    if (text) {
-      userMessages.push(messageContainer);
-    }
-  });
-  
-  return userMessages;
-}
-
-function getMessageText(message) {
-  const isGemini = window.location.href.includes('gemini.google.com');
-  
-  if (isGemini) {
-    // For Gemini, look for p elements within the message container
-    const textElement = message.querySelector('p');
-    if (textElement && textElement.textContent) {
-      return textElement.textContent.trim();
-    }
-  } else {
-    // ChatGPT logic
-    const textElement = message.querySelector('.whitespace-pre-wrap');
-    if (textElement && textElement.textContent) {
-      return textElement.textContent.trim();
-    }
+function getChatGPTMessageText(message) {
+  // Try to get text from whitespace-pre-wrap div
+  const textElement = message.querySelector('.whitespace-pre-wrap');
+  if (textElement && textElement.textContent) {
+    return textElement.textContent.trim();
   }
   
   // Fallback: get all text content
@@ -241,16 +189,13 @@ function getMessageText(message) {
 }
 
 function truncateText(text, wordCount = 10, charLimit = 50) {
-  // First check character limit
   if (text.length <= charLimit) return text;
   
-  // Then check word count
   const words = text.split(/\s+/);
   if (words.length <= wordCount) {
     return text.substring(0, charLimit) + '...';
   }
   
-  // Return whichever is shorter - 10 words or 50 chars
   const wordLimited = words.slice(0, wordCount).join(' ');
   const charLimited = text.substring(0, charLimit);
   
@@ -258,11 +203,9 @@ function truncateText(text, wordCount = 10, charLimit = 50) {
 }
 
 function scrollToMessage(message) {
-  // Find the parent article if the message is not an article itself
   let articleElement = message.closest('article');
   if (!articleElement) articleElement = message;
   
-  // Scroll to the element
   articleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
   
   // Add highlight effect
@@ -277,13 +220,9 @@ function scrollToMessage(message) {
 }
 
 function setupObserver(mainElement) {
-  // Find the presentation div that contains the chat messages
   const presentationDiv = mainElement.querySelector('div[role="presentation"]');
-  
-  // If presentation div not found, fall back to main element
   const targetElement = presentationDiv || mainElement;
   
-  // Create an observer to watch for new messages
   const observer = new MutationObserver((mutations) => {
     const panel = document.getElementById('quick-scroll-panel');
     if (panel && !panel.classList.contains('hidden')) {
@@ -291,7 +230,6 @@ function setupObserver(mainElement) {
     }
   });
   
-  // Start observing the presentation div
   observer.observe(targetElement, { 
     childList: true, 
     subtree: true 

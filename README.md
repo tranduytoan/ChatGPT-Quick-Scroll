@@ -2,7 +2,7 @@
 
 ## Overview
 
-This browser extension helps you quickly navigate between your messages in ChatGPT conversations. No more excessive scrolling to find your previous messages!
+This browser extension helps you quickly navigate between your messages in ChatGPT and Gemini conversations. No more excessive scrolling to find your previous messages!
 
 ## Features
 
@@ -10,12 +10,13 @@ This browser extension helps you quickly navigate between your messages in ChatG
 - **Message List**: Displays a list of all your messages in the conversation
 - **Jump Quickly**: Click on any message to scroll to its position
 - **Auto-Update**: Automatically detects and displays new messages
-- **Dark Mode Support**: Compatible with ChatGPT's dark mode
+- **Dark Mode Support**: Compatible with ChatGPT's and Gemini's dark mode
+- **Multi-Platform**: Works on both ChatGPT (chatgpt.com) and Gemini (gemini.google.com)
 
 ## How to Use
 
 1. Install the extension to your browser
-2. Visit ChatGPT (chatgpt.com)
+2. Visit ChatGPT (chatgpt.com) or Gemini (gemini.google.com)
 3. Click the ⚡ button at the bottom left corner of the screen
 4. Select a message from the list to jump to its position
 

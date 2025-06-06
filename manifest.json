@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ChatGPT Quick Scroll",
   "version": "1.0",
-  "description": "Quickly navigate between your messages in ChatGPT",
+  "description": "Quickly navigate between your messages in ChatGPT and Gemini",
   "icons": {
     "16": "images/avt.png",
     "48": "images/avt.png",
@@ -11,7 +11,12 @@
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*"],
-      "js": ["content.js"],
+      "js": ["chatgpt-content.js"],
+      "css": ["styles.css"]
+    },
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["gemini-content.js"],
       "css": ["styles.css"]
     }
   ],

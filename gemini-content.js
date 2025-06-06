@@ -1,27 +1,12 @@
-// Wait for the page to be fully loaded
-document.addEventListener('DOMContentLoaded', () => setTimeout(initWithRetry, 500));
 window.addEventListener('load', () => setTimeout(initWithRetry, 1000));
 
-// Also try to init if the document is already loaded
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  setTimeout(initWithRetry, 1500);
-}
-
-// Initialize with retry mechanism
 function initWithRetry(retryCount = 0, maxRetries = 10) {
-  // Check if we're on supported platforms
-  const isChatGPT = window.location.href.includes('chatgpt.com');
-  const isGemini = window.location.href.includes('gemini.google.com');
-  
-  if (!isChatGPT && !isGemini) return;
-  
   // Make sure the main element exists
-  const mainElement = document.querySelector('main');
+  const mainElement = document.querySelector('#app-root > main > side-navigation-v2 > bard-sidenav-container > bard-sidenav-content');
   if (!mainElement) {
     if (retryCount < maxRetries) {
-      // Exponential backoff for retries (500ms, 1000ms, 2000ms, etc.)
       const delay = 500 * Math.pow(2, retryCount);
-      console.log(`ChatGPT Quick Scroll: Main element not found, retrying in ${delay}ms (${retryCount + 1}/${maxRetries})`);
+      console.log(`Gemini Quick Scroll: Main element not found, retrying in ${delay}ms (${retryCount + 1}/${maxRetries})`);
       setTimeout(() => initWithRetry(retryCount + 1, maxRetries), delay);
     }
     return;
@@ -29,14 +14,14 @@ function initWithRetry(retryCount = 0, maxRetries = 10) {
 
   // Check if button already exists
   if (document.getElementById('quick-scroll-btn')) {
-    console.log('ChatGPT Quick Scroll: Button already exists');
+    console.log('Gemini Quick Scroll: Button already exists');
     if (retryCount < maxRetries) {
       setTimeout(() => initWithRetry(retryCount + 1, maxRetries), 500);
     }
     return;
   }
 
-  console.log('ChatGPT Quick Scroll: Initializing button');
+  console.log('Gemini Quick Scroll: Initializing button');
   createQuickScrollButton(mainElement);
   
   // Set up mutation observer to detect new messages
@@ -47,9 +32,9 @@ function createQuickScrollButton(mainElement) {
   // Create the button
   const button = document.createElement('button');
   button.id = 'quick-scroll-btn';
-  button.innerHTML = '⚡';  // Lightning bolt icon
+  button.innerHTML = '⚡';
   button.title = 'Quick scroll to messages';
-  
+   
   // Set button styles for positioning relative to main element
   button.style.position = 'absolute';
   button.style.bottom = '20px';
@@ -66,22 +51,41 @@ function createQuickScrollButton(mainElement) {
   panel.id = 'quick-scroll-panel';
   panel.classList.add('hidden');
   panel.style.position = 'absolute';
-  panel.style.bottom = '70px';  // Position above the button
+  panel.style.bottom = '70px';
   panel.style.left = '24px';
-  panel.style.zIndex = '1001';  // Ensure panel appears above other elements
-  panel.style.width = '413px';  // Set a fixed width for the panel
-  panel.style.height = '50%'; // Limit height with scrolling
-  panel.style.overflowY = 'auto';  // Enable scrolling if content is too tall
-  
+  panel.style.zIndex = '1001';
+  panel.style.width = '413px';
+  panel.style.height = '50%';
+  panel.style.overflowY = 'auto';
+  // Add Gemini-specific font styling
+  panel.style.fontFamily = 'ui-sans-serif,-apple-system,system-ui,Segoe UI,Helvetica,Apple Color Emoji,Arial,sans-serif,Segoe UI Emoji,Segoe UI Symbol';
+  panel.style.lineHeight = '1.5';
+  panel.style.tabSize = '4';
+
   // Create panel header
   const header = document.createElement('div');
+  const headerText = document.createElement('div');
+  const headerNote = document.createElement('div');
+
   header.id = 'quick-scroll-header';
-  header.textContent = 'Your Messages';
+
+  headerText.textContent = 'Your Messages';
+  headerText.style.fontWeight = 'bold';
+
+  headerNote.id = 'quick-scroll-header-note';
+  headerNote.style.fontSize = '0.875rem'; // 14px
+  headerNote.style.color = '#6b7280'; // Tailwind gray-500
+  // headerNote.classList.add('hidden');
+  headerNote.textContent = 'Note: Gemini may not load all old messages.';
+
+  header.appendChild(headerText);
+  header.appendChild(headerNote);
   panel.appendChild(header);
 
   // Create panel content container
   const content = document.createElement('div');
   content.id = 'quick-scroll-content';
+  // Add content font styling
   panel.appendChild(content);
   
   // Set main element to position:relative if it's not already
@@ -90,11 +94,9 @@ function createQuickScrollButton(mainElement) {
     mainElement.style.position = 'relative';
   }
   
-  // Append button to mainElement and panel to mainElement
+  // Append button and panel to mainElement
   mainElement.appendChild(button);
-  // document.body.appendChild(panel);
   mainElement.appendChild(panel);
-
   
   // Button click toggles panel
   button.addEventListener('click', () => {
@@ -119,10 +121,12 @@ function createQuickScrollButton(mainElement) {
 
 function updateMessagesPanel() {
   const content = document.getElementById('quick-scroll-content');
-  content.innerHTML = '';  // Clear existing content
+  content.replaceChildren();
   
   // Find all user messages
-  const userMessages = findUserMessages();
+  // userMessages: Element[];
+  const userMessages = findGeminiUserMessages();
+  // updateHeaderNote(userMessages);
   
   if (userMessages.length === 0) {
     const noMessages = document.createElement('div');
@@ -138,11 +142,11 @@ function updateMessagesPanel() {
     messageElement.className = 'quick-scroll-message';
     
     // Get message text and truncate it
-    const messageText = getMessageText(message);
+    const messageText = getGeminiMessageText(message);
     const truncatedText = truncateText(messageText);
     
     messageElement.textContent = truncatedText;
-    messageElement.title = messageText; // Show full text on hover
+    messageElement.title = messageText;
     
     // Add click event to scroll to the message
     messageElement.addEventListener('click', () => {
@@ -153,104 +157,44 @@ function updateMessagesPanel() {
   });
 }
 
-function findUserMessages() {
-  const isChatGPT = window.location.href.includes('chatgpt.com');
-  const isGemini = window.location.href.includes('gemini.google.com');
-  
-  if (isGemini) {
-    return findGeminiUserMessages();
-  } else if (isChatGPT) {
-    return findChatGPTUserMessages();
-  }
-  
-  return [];
-}
-
-function findChatGPTUserMessages() {
-  // Find all user messages using the data attribute
-  const messagesWithRole = Array.from(document.querySelectorAll('[data-message-author-role="user"]'));
-  
-  // Find message containers using conversation turns
-  const allArticles = Array.from(document.querySelectorAll('article[data-testid^="conversation-turn-"]'));
-  const userArticles = allArticles.filter(article => {
-    return article.querySelector('h5.sr-only') && 
-           article.querySelector('h5.sr-only').textContent.includes('Bạn đã nói:');
-  });
-  
-  // Create a map to track unique messages by their text content
-  const uniqueMessages = new Map();
-  
-  // Process messages with role attribute
-  messagesWithRole.forEach(msg => {
-    const text = getMessageText(msg);
-    if (text && !uniqueMessages.has(text)) {
-      uniqueMessages.set(text, msg);
-    }
-  });
-  
-  // Process user articles, avoiding duplicates
-  userArticles.forEach(article => {
-    const text = getMessageText(article);
-    if (text && !uniqueMessages.has(text)) {
-      uniqueMessages.set(text, article);
-    }
-  });
-  
-  // Return only the unique message elements
-  return Array.from(uniqueMessages.values());
-}
-
+// trả về một Element[], mỗi element là <div> chứa các <p>, mỗi <p> là một dòng của tin nhắn
 function findGeminiUserMessages() {
-  // Find all Gemini user messages using the specific selector pattern
   const userMessages = [];
   
   // Look for user query content elements
-  const queryElements = document.querySelectorAll('[id^="user-query-content-"] p');
+  const queryElements = document.querySelectorAll('[id^="user-query-content-"] div.query-text');
   
   queryElements.forEach(element => {
     // Find the closest container that represents the full message
-    const messageContainer = element.closest('[id^="user-query-content-"]') || element;
-    const text = getMessageText(messageContainer);
+    const text = getGeminiMessageText(element);
     if (text) {
-      userMessages.push(messageContainer);
+      userMessages.push(element);
     }
   });
-  
+
   return userMessages;
 }
 
-function getMessageText(message) {
-  const isGemini = window.location.href.includes('gemini.google.com');
-  
-  if (isGemini) {
-    // For Gemini, look for p elements within the message container
-    const textElement = message.querySelector('p');
-    if (textElement && textElement.textContent) {
-      return textElement.textContent.trim();
-    }
-  } else {
-    // ChatGPT logic
-    const textElement = message.querySelector('.whitespace-pre-wrap');
-    if (textElement && textElement.textContent) {
-      return textElement.textContent.trim();
-    }
+function getGeminiMessageText(element) {
+  const textLines = element.querySelectorAll('p');
+  let textContent = '';
+
+  if (textLines.length > 0) {
+    textLines.forEach(line => {
+      textContent += line.textContent.trim() + '\n';
+    });
   }
-  
-  // Fallback: get all text content
-  return message.textContent.trim();
+  return textContent.trim();
 }
 
 function truncateText(text, wordCount = 10, charLimit = 50) {
-  // First check character limit
   if (text.length <= charLimit) return text;
   
-  // Then check word count
   const words = text.split(/\s+/);
   if (words.length <= wordCount) {
     return text.substring(0, charLimit) + '...';
   }
   
-  // Return whichever is shorter - 10 words or 50 chars
   const wordLimited = words.slice(0, wordCount).join(' ');
   const charLimited = text.substring(0, charLimit);
   
@@ -258,11 +202,9 @@ function truncateText(text, wordCount = 10, charLimit = 50) {
 }
 
 function scrollToMessage(message) {
-  // Find the parent article if the message is not an article itself
-  let articleElement = message.closest('article');
+  let articleElement = message.closest('user-query-content');
   if (!articleElement) articleElement = message;
   
-  // Scroll to the element
   articleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
   
   // Add highlight effect
@@ -276,14 +218,34 @@ function scrollToMessage(message) {
   panel.classList.add('hidden');
 }
 
+// function updateHeaderNote(userMessages) {
+//   const headerNote = document.getElementById('quick-scroll-header-note');
+//   if (!headerNote) return;
+  
+//   const minQueryId = userMessages[0]?.closest('span')?.closest('div')?.getAttribute('id');
+//   if (!minQueryId || !minQueryId.startsWith('user-query-content-')) {
+//     headerNote.classList.add('hidden');
+//     return;
+//   }
+
+//   const index = parseInt(minQueryId.replace('user-query-content-', ''), 10);
+//   if (isNaN(index)) {
+//     headerNote.classList.add('hidden');
+//     return;
+//   }
+
+//   headerNote.classList.remove('hidden');
+//   headerNote.textContent =
+//     `There ${index === 1 ? 'is' : 'are'} ${index} more message${index === 1 ? '' : 's'} not loaded`;
+// }
+
 function setupObserver(mainElement) {
-  // Find the presentation div that contains the chat messages
-  const presentationDiv = mainElement.querySelector('div[role="presentation"]');
-  
-  // If presentation div not found, fall back to main element
-  const targetElement = presentationDiv || mainElement;
-  
-  // Create an observer to watch for new messages
+  const target = mainElement.querySelector('.content-wrapper')
+  if (!target) {
+    console.error('Gemini Quick Scroll: Target element not found for observer');
+    return;
+  }
+
   const observer = new MutationObserver((mutations) => {
     const panel = document.getElementById('quick-scroll-panel');
     if (panel && !panel.classList.contains('hidden')) {
@@ -291,11 +253,10 @@ function setupObserver(mainElement) {
     }
   });
   
-  // Start observing the presentation div
-  observer.observe(targetElement, { 
+  observer.observe(target, { 
     childList: true, 
     subtree: true 
   });
   
-  console.log(`ChatGPT Quick Scroll: Observer set up on ${presentationDiv ? 'presentation div' : 'main element'}`);
+  console.log('Gemini Quick Scroll: Observer set up on main element');
 }
